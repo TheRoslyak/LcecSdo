@@ -10,7 +10,7 @@
 #include <iomanip>
 #include <stdint.h>
 
-// Структура для хранения данных различных типов HAL-переменных
+// Structure to store data of different types of HAL variables
 struct HALVariableData {
     hal_bit_t* bit;
     hal_u32_t* u32;
@@ -20,7 +20,7 @@ struct HALVariableData {
     HALVariableData() : bit(nullptr), u32(nullptr), s32(nullptr), flt(nullptr) {}
 };
 
-// Структура для хранения конфигурации SDO и связанной с ним HAL-переменной
+// Structure to store SDO configuration and its associated HAL variable
 struct SDOConfig {
     uint16_t index;
     uint8_t subIndex;
@@ -31,13 +31,12 @@ struct SDOConfig {
     HALVariableData hal_var_data;
     uint16_t alias;
     uint16_t position;
-    size_t bitOffset; // Смещение для конкретного бита в комплексе
-    float scale;      // Масштаб
-    float offset;     // Смещение
+    size_t bitOffset; // Offset for a specific bit in a complex structure
+    float scale;      // Scale
+    float offset;     // Offset
 
-    SDOConfig() : scale(1.0f), offset(0.0f) {} // Инициализация по умолчанию
+    SDOConfig() : scale(1.0f), offset(0.0f) {} // Default initialization
 };
-
 
 static int comp_id = -1;
 static ec_master_t* master = nullptr;
@@ -62,14 +61,14 @@ void initialize_slave_info(ec_master_t* master, ec_master_info_t& master_info) {
     }
 }
 
-// Функция для чтения данных SDO с использованием конфигурации
+// Function to read SDO data using the configuration
 int read_sdo(uint16_t position, uint16_t index, uint8_t subindex, uint8_t* target, size_t size) {
     uint32_t abort_code;
     size_t result_size;
 
     std::cout << "Starting SDO upload for Index=0x" << std::hex << index << ", SubIndex=0x" << std::hex << size << std::endl;
 
-    int ret = ecrt_master_sdo_upload(master, position, index, subindex, target,size, &result_size, &abort_code);
+    int ret = ecrt_master_sdo_upload(master, position, index, subindex, target, size, &result_size, &abort_code);
 
     if (ret < 0) {
         std::cerr << "SDO upload failed for SDO 0x" << std::hex << index << ":0x" << std::hex << static_cast<int>(subindex)
@@ -77,11 +76,11 @@ int read_sdo(uint16_t position, uint16_t index, uint8_t subindex, uint8_t* targe
         return -1;
     }
 
-    // Вывод информации о результате
+    // Display result information
     std::cout << "SDO upload successful for Index=0x" << std::hex << index << ", SubIndex=0x"
               << std::hex << static_cast<int>(subindex) << ". Data size: " << std::dec << result_size << " bytes." << std::endl;
 
-    // Вывод значений данных
+    // Display data values
     std::cout << "SDO Data (hex):";
     for (size_t i = 0; i < result_size; ++i) {
         std::cout << " " << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(target[i]);
@@ -90,7 +89,8 @@ int read_sdo(uint16_t position, uint16_t index, uint8_t subindex, uint8_t* targe
 
     return 0;
 }
-// Конфигурация SDO на основе YAML
+
+// SDO configuration based on YAML
 void configure_sdos_from_yaml(const YAML::Node& yaml_slave_config, uint16_t alias, uint16_t position, uint32_t vendor_id, uint32_t product_code) {
     std::cout << "Starting to configure SDOs for slave at alias " << alias << ", position " << position << std::endl;
 
@@ -208,7 +208,7 @@ void configure_sdos_from_yaml(const YAML::Node& yaml_slave_config, uint16_t alia
                         config.halPin = halPin;
                         config.hal_var_data.flt = *hal_var;
 
-                        // Парсинг scale и offset для типа float
+                        // Parsing scale and offset for float type
                         if (sdo["scale"]) {
                             config.scale = sdo["scale"].as<float>();
                         }
@@ -223,7 +223,7 @@ void configure_sdos_from_yaml(const YAML::Node& yaml_slave_config, uint16_t alia
                     std::cerr << "Unknown HAL type: " << halType << " for SDO 0x" << std::hex << index << ":0x" << subIndex << std::endl;
                 }
             } catch (const std::exception& e) {
-                std::cerr << "Ошибка при разборе YAML для SDO: " << e.what() << std::endl;
+                std::cerr << "Error parsing YAML for SDO: " << e.what() << std::endl;
             }
         }
     } else {
@@ -231,36 +231,36 @@ void configure_sdos_from_yaml(const YAML::Node& yaml_slave_config, uint16_t alia
     }
 }
 
-// Функция для переворачивания байтов в 32-битном слове (для преобразования порядка байтов)
+// Function to swap bytes in a 32-bit word (for byte order conversion)
 uint32_t swap_uint32(uint32_t val) {
     return (val << 24) | ((val << 8) & 0x00FF0000) | ((val >> 8) & 0x0000FF00) | (val >> 24);
 }
 
-// В функции update_hal_variables:
+// In the update_hal_variables function:
 void update_hal_variables() {
-    // Группируем конфигурации SDO по индексам и подиндексам
+    // Group SDO configurations by index and subindex
     std::map<std::pair<uint16_t, uint8_t>, std::vector<SDOConfig>> sdo_groups;
     for (const auto& config : sdo_configs) {
         sdo_groups[{config.index, config.subIndex}].push_back(config);
     }
 
-    // Проходим по каждой группе и делаем один запрос на SDO
+    // Iterate through each group and make one SDO request
     for (const auto& group : sdo_groups) {
         const auto& configs = group.second;
         if (configs.empty()) continue;
 
-        // Определяем размер данных для чтения на основе конфигурации
-        size_t data_size = (configs[0].bitLen + 7) / 8;  // округление вверх для получения целого количества байт
+        // Determine the size of data to be read based on the configuration
+        size_t data_size = (configs[0].bitLen + 7) / 8;  // Round up to get a whole number of bytes
         uint8_t* data = new uint8_t[data_size];
         memset(data, 0, data_size);
 
-        // Делаем один запрос на SDO
+        // Make one SDO request
         const auto& first_config = configs[0];
         std::cout << "Updating HAL variables for SDO 0x" << std::hex << std::setw(4) << std::setfill('0') << first_config.index
                   << ":0x" << std::setw(2) << std::setfill('0') << static_cast<int>(first_config.subIndex) << std::endl;
 
         if (read_sdo(first_config.position, first_config.index, first_config.subIndex, data, data_size) == 0) {
-            // Распределяем данные по переменным
+            // Distribute the data across the variables
             for (const auto& config : configs) {
                 if (config.halType == "bit") {
                     size_t byteIndex = config.bitOffset / 8;
@@ -281,13 +281,13 @@ void update_hal_variables() {
                     }
                 } else if (config.halType == "S32") {
                     if (config.bitLen == 16) {
-                        // Если SDO представляет собой 16-битное знаковое значение
+                        // If the SDO represents a 16-bit signed value
                         int16_t raw_value = *(int16_t*)data;
-                        int32_t extended_value = static_cast<int32_t>(raw_value);  // Расширение до 32 бит с сохранением знака
+                        int32_t extended_value = static_cast<int32_t>(raw_value);  // Extend to 32 bits while preserving the sign
                         *(config.hal_var_data.s32) = extended_value;
                         std::cout << "Updated HAL S32 variable with extended value: " << std::hex << extended_value << " for pin " << config.halPin << std::endl;
                     } else {
-                        // Если SDO представляет собой 32-битное значение
+                        // If the SDO represents a 32-bit value
                         int32_t raw_value = *(int32_t*)data;
                         *(config.hal_var_data.s32) = raw_value;
                         std::cout << "Updated HAL S32 variable: " << std::hex << raw_value << " for pin " << config.halPin << std::endl;
@@ -296,22 +296,22 @@ void update_hal_variables() {
                     float value = 0.0f;
 
                     if (config.bitLen == 16) {
-                        // Если данные имеют размер 16 бит
+                        // If the data size is 16 bits
                         uint16_t raw_value = *(uint16_t*)data;
 
-                        // Преобразуем 16-битное значение в float
+                        // Convert 16-bit value to float
                         value = static_cast<float>(raw_value);
                     } else if (config.bitLen == 32) {
-                        // Если данные имеют размер 32 бита
+                        // If the data size is 32 bits
                         uint32_t raw_value = *(uint32_t*)data;
-                        raw_value = swap_uint32(raw_value); // Переворачиваем байты для правильного порядка
-                        value = *(float*)&raw_value; // Преобразуем 32-битное значение в float
+                        raw_value = swap_uint32(raw_value); // Swap bytes for correct order
+                        value = *(float*)&raw_value; // Convert 32-bit value to float
                     }
 
-                    // Применяем масштабирование и смещение
+                    // Apply scaling and offset
                     value = value * config.scale + config.offset;
 
-                    // Записываем результат в HAL-переменную
+                    // Store the result in the HAL variable
                     *(config.hal_var_data.flt) = value;
                     std::cout << "Updated HAL float variable: " << value << " for pin " << config.halPin << std::endl;
                 }
@@ -324,34 +324,34 @@ void update_hal_variables() {
 
 
 int main(int argc, char* argv[]) {
-    // Устанавливаем обработчики сигналов
+    // Set up signal handlers
     signal(SIGINT, signalHandler);
     signal(SIGTERM, signalHandler);
 
-    // Проверяем, передан ли путь к YAML-файлу в аргументах командной строки
+    // Check if the path to the YAML file is provided as a command line argument
     if (argc != 2) {
         std::cerr << "Usage: " << argv[0] << " <path_to_yaml_config>" << std::endl;
         return -1;
     }
 
-    // Получаем путь к YAML-файлу
+    // Get the path to the YAML file
     std::string yaml_file_path = argv[1];
 
-    // Инициализация компонента HAL
+    // Initialize HAL component
     comp_id = hal_init("lcecsdo");
     if (comp_id < 0) {
-        std::cerr << "HAL инициализация не удалась с ошибкой " << comp_id << std::endl;
+        std::cerr << "HAL initialization failed with error " << comp_id << std::endl;
         return comp_id;
     }
 
-    // Запрос мастера EtherCAT
+    // Request EtherCAT master
     master = ecrt_request_master(0);
     if (!master) {
-        std::cerr << "Ошибка при запросе EtherCAT мастера.\n";
+        std::cerr << "Error requesting EtherCAT master.\n";
         return -1;
     }
 
-    // Получаем информацию о мастере
+    // Get master information
     ec_master_info_t master_info;
     if (ecrt_master(master, &master_info) != 0) {
         std::cerr << "Failed to retrieve master info.\n";
@@ -360,11 +360,11 @@ int main(int argc, char* argv[]) {
 
     std::cout << "Number of slaves detected: " << master_info.slave_count << std::endl;
 
-    // Инициализируем информацию о слейвах
+    // Initialize slave information
     initialize_slave_info(master, master_info);
 
     try {
-        // Загружаем конфигурацию из YAML-файла
+        // Load configuration from YAML file
         YAML::Node config = YAML::LoadFile(yaml_file_path);
         const auto& slave_configs = config["master"]["slaves"];
         if (slave_configs && slave_configs.size() > 0) {
@@ -383,7 +383,7 @@ int main(int argc, char* argv[]) {
             std::cerr << "No slaves found in the YAML configuration file.\n";
         }
     } catch (const YAML::Exception& e) {
-        std::cerr << "Ошибка при разборе YAML: " << e.what() << std::endl;
+        std::cerr << "Error parsing YAML: " << e.what() << std::endl;
         return -1;
     }
 
@@ -394,7 +394,7 @@ int main(int argc, char* argv[]) {
     while (running) {
         std::cerr << "count :" <<  count++ << std::endl;
         update_hal_variables();
-        usleep(1000000); // Пауза для циклического обновления
+        usleep(1000000); // Pause for cyclic updates
     }
 
     hal_exit(comp_id);
