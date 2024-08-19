@@ -1,0 +1,79 @@
+master:
+  idx: 0
+  appTimePeriod: 1000000
+  refClockSyncCycles: 1
+  slaves:
+    - idx: 0
+      type: "generic"
+      vid: "000001dd"
+      pid: "10400140"
+      sdo:
+        - index: 3026
+          subIndex: 01
+          bitLen: 16
+          readWrite: "RO"
+          halType: "complex"
+          complexEntries:
+            - bitLen: 2
+            - bitLen: 1
+              halPin: "DI.Status.MI1"
+              halTyp: "bit"
+            - bitLen: 1
+              halPin: "DI.Status.MI2"
+              halTyp: "bit"
+            - bitLen: 1
+              halPin: "DI.Status.MI3"
+              halTyp: "bit"
+            - bitLen: 1
+              halPin: "DI.Status.MI4"
+              halTyp: "bit"
+            - bitLen: 1
+              halPin: "DI.Status.MI5"
+              halTyp: "bit"
+            - bitLen: 1
+              halPin: "DI.Status.MI6"
+              halTyp: "bit"
+            - bitLen: 1
+              halPin: "DI.Status.MI7"
+              halTyp: "bit"
+            - bitLen: 1
+              halPin: "DI.Status.MI8"
+              halTyp: "bit"
+            - bitLen: 6
+        - index: 3026
+          subIndex: 41
+          bitLen: 16
+          readWrite: "RW"
+          halType: "complex"
+          complexEntries:
+            - bitLen: 1
+              halPin: "DO.Status.RL2"
+              halTyp: "bit"
+            - bitLen: 1
+              halPin: "DO.Status.RL1"
+              halTyp: "bit"
+            - bitLen: 1
+            - bitLen: 1
+              halPin: "DO.Status.MO1"
+              halTyp: "bit"
+            - bitLen: 1
+              halPin: "DO.Status.MO2"
+              halTyp: "bit"
+            - bitLen: 11
+        - index: 3022
+          subIndex: 04
+          bitLen: 16
+          name: "DcBus"
+          readWrite: "RO"
+          halType: "float"
+          scale : 0.1
+        - index: 3022
+          subIndex: 04
+          bitLen: 16
+          name: "DcBus2"
+          readWrite: "RO"
+          halType: "U32"
+          
+                 
+
+          
