@@ -8,6 +8,16 @@ master:
       vid: "000001dd"
       pid: "10400140"
       sdo:
+        - index: 6083
+          subIndex: 00
+          bitLen: 32
+          name: "Acc"
+          readWrite: "RW"
+          halType: "float"
+          scaleForward: 122880
+          
+          offset: 0
+          
         - index: 3026
           subIndex: 01
           bitLen: 16
@@ -73,7 +83,8 @@ master:
           name: "DcBus2"
           readWrite: "RO"
           halType: "U32"
-          
+
+                  
                  
 
           
