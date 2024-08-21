@@ -302,7 +302,7 @@ void configure_sdos_from_yaml(const YAML::Node& yaml_slave_config, uint16_t alia
 
 
 
-// Функция для обработки и логирования данных
+
 template <typename T>
 T extract_raw_value(const uint8_t* data, size_t bitLen) {
     if (bitLen == 16) {
@@ -317,7 +317,7 @@ T extract_raw_value(const uint8_t* data, size_t bitLen) {
     return 0;
 }
 
-// Функция для преобразования значения из HAL в сырое значение
+
 template <typename T>
 T convert_to_raw_value(float hal_value, const SDOConfig& config) {
     if (config.scaleForward != 0.0f) {
@@ -327,7 +327,7 @@ T convert_to_raw_value(float hal_value, const SDOConfig& config) {
     }
 }
 
-// Основная функция обновления HAL переменных
+
 void update_hal_variables() {
     std::map<std::pair<uint16_t, uint8_t>, std::vector<SDOConfig>> sdo_groups;
 
@@ -409,7 +409,7 @@ void update_hal_variables() {
                     case HALType::FLOAT: {
                         float value = extract_raw_value<float>(data, config.bitLen);
 
-                        // Применение scaleForward и scale
+                        
                         if (config.scaleForward != 0.0f) {
                             if (config.bitLen == 16) {
                                 value = (config.scaleForward / static_cast<float>(*(uint16_t*)data)) * config.scale + config.offset;
